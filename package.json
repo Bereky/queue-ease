@@ -1,0 +1,39 @@
+{
+  "name": "jklu-q-wait",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/M0hitSingh/Jklu-Q-wait.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/M0hitSingh/Jklu-Q-wait/issues"
+  },
+  "homepage": "https://github.com/M0hitSingh/Jklu-Q-wait#readme",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "csvtojson": "^2.0.10",
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "express-async-handler": "^1.2.0",
+    "express-session": "^1.17.3",
+    "express-validator": "^6.14.2",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^6.5.2",
+    "nodemailer": "^6.9.1",
+    "nodemailer-sendgrid-transport": "^0.2.0",
+    "nodemon": "^2.0.22",
+    "otp-generator": "^4.0.0",
+    "passport": "^0.6.0",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-local": "^1.0.0",
+    "twilio": "^3.80.1"
+  }
+}
