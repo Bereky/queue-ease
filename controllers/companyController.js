@@ -138,6 +138,7 @@ const addService = asyncHandler(async (req, res) => {
       waitTime,
       limit,
       fee,
+      currPos: 1,
     });
 
     const serviceInCompany = await Company.findByIdAndUpdate(
@@ -147,7 +148,16 @@ const addService = asyncHandler(async (req, res) => {
       }
     );
 
-    if (service && serviceInCompany) {
+    const assignServiceToStaff = await Staff.findByIdAndUpdat(
+      {
+        _id: staff,
+      },
+      {
+        $set: { service: service._id },
+      }
+    );
+
+    if (service && serviceInCompany && assignServiceToStaff) {
       const allServices = await Service.find({ company: company._id });
 
       if (allServices) {
@@ -193,9 +203,20 @@ const updateService = asyncHandler(async (req, res) => {
 const removeService = asyncHandler(async (req, res) => {
   const { _id, company } = req.body;
 
-  const removedServie = await Service.findByIdAndDelete({ _id: _id });
+  const removedService = await Service.findByIdAndDelete({ _id: _id });
+  const removedServiceFromCompany = await Company.findByIdAndUpdate(
+    { _id: company },
+    {
+      $pull: { services: { _id: 1234 } },
+    },
+    {
+      new: true,
+    }
+  );
 
-  if (removedServie) {
+  console.log(removedServiceFromCompany);
+
+  if (removedService && removedServiceFromCompany) {
     const service = await Service.find({ company: company });
 
     res.status(200).send(service);

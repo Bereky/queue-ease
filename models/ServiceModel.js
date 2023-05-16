@@ -36,6 +36,10 @@ const serviceSchema = new mongoose.Schema(
       type: Array,
       allowNull: true,
     },
+    currPos: {
+      type: Number,
+      allowNull: false,
+    },
   },
   {
     timestamps: true,

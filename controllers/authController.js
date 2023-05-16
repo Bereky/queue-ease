@@ -151,6 +151,7 @@ const createCustomer = asyncHandler(async (req, res) => {
     phone: phone,
     address: address,
     city: city,
+    queues: [],
   });
 
   const user = await User.findByIdAndUpdate(

@@ -25,6 +25,10 @@ const customerSchema = new mongoose.Schema(
       type: String,
       allowNull: true,
     },
+    queues: {
+      type: Array,
+      allowNull: true,
+    },
   },
   {
     timestamps: true,

@@ -9,6 +9,7 @@ const passport = require("passport");
 const authRoutes = require("./routes/auth");
 const companyRoutes = require("./routes/company");
 const customerRoutes = require("./routes/customer");
+const staffRoutes = require("./routes/staff");
 const storeroutes = require("./routes/store");
 
 const PORT = process.env.PORT || 8200;
@@ -44,6 +45,7 @@ app.use(passport.session());
 app.use("/api/auth", authRoutes);
 app.use("/api/company", companyRoutes);
 app.use("/api/customer", customerRoutes);
+app.use("/api/staff", staffRoutes);
 app.use("/store", storeroutes);
 
 app.use((error, req, res, next) => {
