@@ -11,6 +11,9 @@ const User = require("../models/UserModel");
 const Customer = require("../models/CustomerModel");
 const Company = require("../models/CompanyModel");
 
+// one time registration for the admin
+const registerAdmin = asyncHandler(async (req, res) => {});
+
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password, aopt } = req.body;
 
@@ -58,7 +61,7 @@ const registerUser = asyncHandler(async (req, res) => {
       token: generateToken(user._id, user.role),
     });
   } else {
-    res.status(401).send("Error occured while creating account");
+    res.status(400).send("Error occured while creating account");
   }
 });
 
@@ -91,10 +94,10 @@ const verifyOtp = asyncHandler(async (req, res) => {
           token: generateToken(userVerified._id, userVerified.role),
         });
       } else {
-        res.status(401).send("Error occured");
+        res.status(400).send("Error occured");
       }
     } else {
-      res.status(401).send("Wrong Otp");
+      res.status(400).send("Wrong Otp");
     }
   }
 });
@@ -136,7 +139,7 @@ const createCompany = asyncHandler(async (req, res) => {
   if (company && user && data) {
     res.status(201).send(data);
   } else {
-    res.status(401).send("Error Creating customer");
+    res.status(400).send("Error Creating customer");
   }
 });
 
@@ -144,15 +147,6 @@ const createCustomer = asyncHandler(async (req, res) => {
   const { name, phone, address, city } = req.body;
 
   console.log(req.body);
-
-  const customer = await Customer.create({
-    user: req.user.id,
-    name: name,
-    phone: phone,
-    address: address,
-    city: city,
-    queues: [],
-  });
 
   const user = await User.findByIdAndUpdate(
     { _id: req.user.id },
@@ -162,6 +156,16 @@ const createCustomer = asyncHandler(async (req, res) => {
       },
     }
   );
+
+  const customer = await Customer.create({
+    user: req.user.id,
+    name: name,
+    email: user.email,
+    phone: phone,
+    address: address,
+    city: city,
+    queues: [],
+  });
 
   const data = {
     _id: user.id,
@@ -175,7 +179,7 @@ const createCustomer = asyncHandler(async (req, res) => {
   if (customer && user && data) {
     res.status(201).send(data);
   } else {
-    res.status(401).send("Error Creating customer");
+    res.status(400).send("Error Creating customer");
   }
 });
 
@@ -184,7 +188,7 @@ const loginUser = asyncHandler(async (req, res, next) => {
   /* passport.authenticate("local", (err, user, info) => {
     if (err) throw err;
     if (!user) {
-      res.status(401).send("Invalid Credentials");
+      res.status(400).send("Invalid Credentials");
       console.log("user not found in db");
     } else {
       req.logIn(user, (err) => {

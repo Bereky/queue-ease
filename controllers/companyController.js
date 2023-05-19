@@ -16,7 +16,7 @@ const getCompany = asyncHandler(async (req, res) => {
 
     res.status(200).send({ company, staff, services });
   } else {
-    res.status(401).send("Company Not Found");
+    res.status(400).send("Company Not Found");
   }
 });
 
@@ -64,7 +64,7 @@ const addStaff = asyncHandler(async (req, res) => {
     if (staff && allStaffs) {
       res.status(201).send(allStaffs);
     } else {
-      res.status(401).send("Error while creating staff");
+      res.status(400).send("Error while creating staff");
     }
   }
 });
@@ -121,7 +121,8 @@ const removeStaff = asyncHandler(async (req, res) => {
 });
 
 const addService = asyncHandler(async (req, res) => {
-  const { name, type, staff, waitTime, workTime, fee, limit } = req.body;
+  const { name, type, staff, waitTime, workTime, fee, limit, status } =
+    req.body;
 
   // addd service
   // update staff as assigned
@@ -139,6 +140,7 @@ const addService = asyncHandler(async (req, res) => {
       limit,
       fee,
       currPos: 1,
+      status,
     });
 
     const serviceInCompany = await Company.findByIdAndUpdate(
@@ -148,7 +150,7 @@ const addService = asyncHandler(async (req, res) => {
       }
     );
 
-    const assignServiceToStaff = await Staff.findByIdAndUpdat(
+    const assignServiceToStaff = await Staff.findByIdAndUpdate(
       {
         _id: staff,
       },
@@ -163,20 +165,19 @@ const addService = asyncHandler(async (req, res) => {
       if (allServices) {
         res.status(201).send(allServices);
       } else {
-        res.status(401).send("Error occured");
+        res.status(400).send("Error occured");
       }
     } else {
-      res.status(401).send("Error occured");
+      res.status(400).send("Error occured");
     }
   } else {
-    res.status(401).send("Error occured");
+    res.status(400).send("Error occured");
   }
 });
 
 const updateService = asyncHandler(async (req, res) => {
-  console.log(req.body);
-
-  const { id, company, name, staff, fee, waitTime, limit, type } = req.body;
+  const { id, company, name, staff, fee, waitTime, limit, type, status } =
+    req.body;
 
   const serviceUpdate = await Service.findByIdAndUpdate(
     { _id: id, company: company },
@@ -188,11 +189,37 @@ const updateService = asyncHandler(async (req, res) => {
         fee: fee,
         limit: limit,
         staff: staff,
+        status: status,
       },
     }
   );
 
-  if (serviceUpdate) {
+  const myCompany = await Company.findOne({ _id: company });
+
+  const companyUpdate = await Company.updateOne(
+    {
+      company,
+      services: { $elemMatch: { _id: id } },
+    },
+    {
+      $set: {
+        "services.$.name": name,
+        "services.$.type": type,
+        "services.$.waitTime": waitTime,
+        "services.$.fee": fee,
+        "services.$.limit": limit,
+        "services.$.staff": staff,
+        "services.$.status": status,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  console.log(companyUpdate);
+
+  if (serviceUpdate && companyUpdate) {
     const service = await Service.find({ company: company });
     res.status(200).send(service);
   } else {
@@ -203,25 +230,88 @@ const updateService = asyncHandler(async (req, res) => {
 const removeService = asyncHandler(async (req, res) => {
   const { _id, company } = req.body;
 
+  console.log(req.body);
+
   const removedService = await Service.findByIdAndDelete({ _id: _id });
-  const removedServiceFromCompany = await Company.findByIdAndUpdate(
-    { _id: company },
+
+  const updateStaff = await Staff.findOneAndUpdate(
+    { service: _id },
     {
-      $pull: { services: { _id: 1234 } },
+      $set: { service: null },
+    }
+  );
+
+  const removedServiceFromCompany = await Company.findOneAndUpdate(
+    company,
+    {
+      $pull: { services: { _id: _id } },
     },
     {
       new: true,
     }
   );
 
-  console.log(removedServiceFromCompany);
+  //console.log(removedServiceFromCompany);
 
-  if (removedService && removedServiceFromCompany) {
+  if (removedService && removedServiceFromCompany && updateStaff) {
     const service = await Service.find({ company: company });
 
     res.status(200).send(service);
   } else {
     res.status(400).send("error while trying to remove");
+  }
+});
+
+const uploadImage = asyncHandler(async (req, res) => {
+  const uploaded = await Company.findOneAndUpdate(
+    { user: req.user.id },
+    {
+      $set: {
+        image: req.file ? req.file.filename : null,
+      },
+    }
+  );
+
+  if (uploaded) {
+    const company = await Company.find({ user: req.user.id });
+
+    res.status(200).send(company[0]);
+  } else {
+    res.status(400).send("Error Uploading image");
+  }
+});
+
+/* Update current user account */
+const changePassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  const user = await User.findOne({ _id: req.user._id });
+
+  // if the user logged in with google
+  const comparePassword = await bcrypt.compare(oldPassword, user.password);
+
+  if (comparePassword) {
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    const updateAccount = await User.findByIdAndUpdate(
+      { _id: req.user._id },
+      {
+        $set: {
+          password: hashedPassword,
+        },
+      },
+      { new: true }
+    );
+
+    if (updateAccount) {
+      res.status(201).send("Password Changed Successfully");
+    } else {
+      res.status(400).send("Error occured");
+    }
+  } else {
+    res.status(400).send("Error occured");
   }
 });
 
@@ -233,4 +323,6 @@ module.exports = {
   addService,
   updateService,
   removeService,
+  uploadImage,
+  changePassword,
 };

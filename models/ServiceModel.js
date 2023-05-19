@@ -40,6 +40,10 @@ const serviceSchema = new mongoose.Schema(
       type: Number,
       allowNull: false,
     },
+    status: {
+      type: Boolean,
+      required: true,
+    },
   },
   {
     timestamps: true,

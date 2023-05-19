@@ -41,9 +41,9 @@ const companySchema = new mongoose.Schema(
       type: Array,
       required: false,
     },
-    staff: {
-      type: Array,
-      required: false,
+    image: {
+      type: String,
+      allowNull: true,
     },
   },
   {

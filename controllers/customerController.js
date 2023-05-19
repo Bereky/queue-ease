@@ -15,7 +15,7 @@ const getCustomer = asyncHandler(async (req, res) => {
   if (customer) {
     res.status(200).send(customer);
   } else {
-    res.status(401).send("Customer Not Found");
+    res.status(400).send("Customer Not Found");
   }
 });
 
@@ -25,7 +25,7 @@ const getCompanies = asyncHandler(async (req, res) => {
   if (company) {
     res.status(200).send(company);
   } else {
-    res.status(401).send("Company Not Found");
+    res.status(400).send("Company Not Found");
   }
 });
 
@@ -37,12 +37,14 @@ const joinQueue = asyncHandler(async (req, res) => {
   // update queues in service
 
   const service = await Service.findOne({ _id: req.body._id });
+  const customer = await Customer.findOne({ user: req.user._id });
 
   const updateService = await Service.findByIdAndUpdate(
     { _id: req.body._id },
     {
       $push: {
         queue: {
+          customer: customer,
           queueId: queueId,
           customerId: req.user._id,
           pos: service.currPos,
@@ -78,7 +80,7 @@ const joinQueue = asyncHandler(async (req, res) => {
 
     res.status(201).send(updatedCustomer);
   } else {
-    res.status(401).send("Error Occured");
+    res.status(400).send("Error Occured");
   }
 
   // update in company
@@ -87,12 +89,12 @@ const joinQueue = asyncHandler(async (req, res) => {
 const leaveQueue = asyncHandler(async (req, res) => {
   const { queueId, serviceId } = req.body;
 
-  const updateService = await Service.findByIdAndUpdate(
-    { _id: serviceId },
+  const updateService = await Service.findOneAndUpdate(
+    { serviceId },
     {
       $pull: {
         queue: {
-          queueId: queueId,
+          serviceId: serviceId,
         },
       },
       $inc: { currPos: -1 },
@@ -102,11 +104,11 @@ const leaveQueue = asyncHandler(async (req, res) => {
   // update queue in customer
 
   const updatedCustomer = await Customer.findOneAndUpdate(
-    { user: req.user._id },
+    req.user._id,
     {
       $pull: {
         queues: {
-          queueId: queueId,
+          serviceId: serviceId,
         },
       },
     },
@@ -120,10 +122,73 @@ const leaveQueue = asyncHandler(async (req, res) => {
 
     res.status(201).send(updatedCustomer);
   } else {
-    res.status(401).send("Error Occured");
+    res.status(400).send("Error Occured");
   }
 
   // update in company
+});
+
+/* Profile controllers */
+
+const updateProfile = asyncHandler(async (req, res) => {
+  //get the data
+  const { name, email } = req.body;
+
+  // update profile
+
+  const updatedProfile = await Customer.findByIdAndUpdate(
+    { _id: req.user.id },
+    {
+      $set: {
+        email: email,
+        name: name,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  // send the updated data
+  if (updatedProfile) {
+    res.status(200).send(updatedProfile);
+  } else {
+    res.status(400).send("Unable to update customer profile");
+  }
+});
+
+/* Update current user account */
+const changePassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  const user = await User.findOne({ _id: req.user._id });
+
+  // if the user logged in with google
+  const comparePassword = await bcrypt.compare(oldPassword, user.password);
+
+  if (comparePassword) {
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    const updateAccount = await User.findByIdAndUpdate(
+      { _id: req.user._id },
+      {
+        $set: {
+          password: hashedPassword,
+        },
+      },
+      { new: true }
+    );
+
+    if (updateAccount) {
+      res.status(201).send("Password Changed Successfully");
+    } else {
+      res.status(400).send("Error occured");
+    }
+  } else {
+    res.status(400).send("Error occured");
+  }
 });
 
 module.exports = {
@@ -131,4 +196,5 @@ module.exports = {
   getCompanies,
   joinQueue,
   leaveQueue,
+  changePassword,
 };
