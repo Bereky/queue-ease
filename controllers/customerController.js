@@ -46,8 +46,10 @@ const joinQueue = asyncHandler(async (req, res) => {
   const queueId = uniqId();
 
   const service = await Service.find({ _id: req.body._id });
+
+  console.log(service);
   // check if the que limit is reached and allow join
-  if (service.limit === service.queue.length + 1) {
+  if (service && service[0].limit === service[0].queue.length + 1) {
     res.status.send("Queue is full");
     return;
   }
@@ -64,7 +66,7 @@ const joinQueue = asyncHandler(async (req, res) => {
           customer: customer,
           queueId: queueId,
           customerId: req.user._id,
-          pos: service.currPos,
+          pos: service[0].currPos,
           joinTime: new Date(),
         },
       },
