@@ -163,7 +163,7 @@ const createCustomer = asyncHandler(async (req, res) => {
     email: user.email,
     phone: phone,
     address: address,
-    city: city,
+    city: null,
     queues: [],
   });
 

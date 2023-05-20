@@ -17,12 +17,10 @@ const customerSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      minLength: 6,
       allowNull: true,
     },
     address: {
       type: String,
-      minLength: 6,
       allowNull: true,
     },
     city: {

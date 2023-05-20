@@ -12,6 +12,7 @@ const {
   removeService,
   uploadImage,
   changePassword,
+  updateCompany,
 } = require("../controllers/companyController");
 const { upload } = require("../middlewares/uploadMiddleware");
 
@@ -30,6 +31,8 @@ router.post(
   upload.single("image"),
   uploadImage
 );
+
+router.post("/update-company", authMiddleware, updateCompany);
 
 router.post("/change-password", authMiddleware, changePassword);
 

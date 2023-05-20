@@ -20,6 +20,39 @@ const getCompany = asyncHandler(async (req, res) => {
   }
 });
 
+/* Profile controllers */
+
+const updateCompany = asyncHandler(async (req, res) => {
+  //get the data
+  const { name, email, address, phoneNumber } = req.body;
+
+  console.log(req.body);
+
+  // update profile
+
+  const updatedProfile = await Company.findOneAndUpdate(
+    { user: req.user.id },
+    {
+      $set: {
+        email: email,
+        name: name,
+        address: address,
+        phone: phoneNumber,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  // send the updated data
+  if (updatedProfile) {
+    res.status(200).send(updatedProfile);
+  } else {
+    res.status(400).send("Unable to update customer profile");
+  }
+});
+
 //add staff
 
 const addStaff = asyncHandler(async (req, res) => {
@@ -143,10 +176,14 @@ const addService = asyncHandler(async (req, res) => {
       status,
     });
 
+    const newService = {
+      serviceId: service._id,
+    };
+
     const serviceInCompany = await Company.findByIdAndUpdate(
       { _id: company._id },
       {
-        $push: { services: service },
+        $push: { services: newService },
       }
     );
 
@@ -161,9 +198,10 @@ const addService = asyncHandler(async (req, res) => {
 
     if (service && serviceInCompany && assignServiceToStaff) {
       const allServices = await Service.find({ company: company._id });
+      const staff = await Staff.find({ company: company._id });
 
       if (allServices) {
-        res.status(201).send(allServices);
+        res.status(201).send({ allServices, staff });
       } else {
         res.status(400).send("Error occured");
       }
@@ -232,8 +270,20 @@ const removeService = asyncHandler(async (req, res) => {
 
   console.log(req.body);
 
+  // check if there are customers in queue and allow delete
+
+  const service = await Service.findOne({ _id: _id });
+
+  console.log(service);
+
+  if (service.queue.length > 0) {
+    res.status(400).send("Cant delete service there are customers in queue");
+    return;
+  }
+
   const removedService = await Service.findByIdAndDelete({ _id: _id });
 
+  // remove staff assign
   const updateStaff = await Staff.findOneAndUpdate(
     { service: _id },
     {
@@ -244,7 +294,7 @@ const removeService = asyncHandler(async (req, res) => {
   const removedServiceFromCompany = await Company.findOneAndUpdate(
     company,
     {
-      $pull: { services: { _id: _id } },
+      $pull: { services: { serviceId: _id } },
     },
     {
       new: true,
@@ -317,6 +367,7 @@ const changePassword = asyncHandler(async (req, res) => {
 
 module.exports = {
   getCompany,
+  updateCompany,
   addStaff,
   updateStaff,
   removeStaff,

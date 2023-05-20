@@ -29,14 +29,31 @@ const getCompanies = asyncHandler(async (req, res) => {
   }
 });
 
+// GET SERVS
+const getServces = asyncHandler(async (req, res) => {
+  const service = await Service.find();
+
+  if (service) {
+    res.status(200).send(service);
+  } else {
+    res.status(400).send("service Not Found");
+  }
+});
+
 const joinQueue = asyncHandler(async (req, res) => {
   console.log(req.body);
 
   const queueId = uniqId();
 
+  const service = await Service.find({ _id: req.body._id });
+  // check if the que limit is reached and allow join
+  if (service.limit === service.queue.length + 1) {
+    res.status.send("Queue is full");
+    return;
+  }
+
   // update queues in service
 
-  const service = await Service.findOne({ _id: req.body._id });
   const customer = await Customer.findOne({ user: req.user._id });
 
   const updateService = await Service.findByIdAndUpdate(
@@ -75,7 +92,9 @@ const joinQueue = asyncHandler(async (req, res) => {
     }
   );
 
-  if (updateService && updatedCustomer) {
+  const upCustomer = await Customer.findOne(req.user._id);
+
+  if (updateService && updatedCustomer && upCustomer) {
     //send customer and all companies
 
     res.status(201).send(updatedCustomer);
@@ -88,18 +107,6 @@ const joinQueue = asyncHandler(async (req, res) => {
 
 const leaveQueue = asyncHandler(async (req, res) => {
   const { queueId, serviceId } = req.body;
-
-  const updateService = await Service.findOneAndUpdate(
-    { serviceId },
-    {
-      $pull: {
-        queue: {
-          serviceId: serviceId,
-        },
-      },
-      $inc: { currPos: -1 },
-    }
-  );
 
   // update queue in customer
 
@@ -117,10 +124,24 @@ const leaveQueue = asyncHandler(async (req, res) => {
     }
   );
 
-  if (updateService && updatedCustomer) {
+  const updateService = await Service.findOneAndUpdate(
+    { serviceId },
+    {
+      $pull: {
+        queue: {
+          serviceId: serviceId,
+        },
+      },
+      $inc: { currPos: -1 },
+    }
+  );
+
+  const upCustomer = await Customer.findOne(req.user._id);
+
+  if (updateService && updatedCustomer && upCustomer) {
     //send customer and all companies
 
-    res.status(201).send(updatedCustomer);
+    res.status(201).send(upCustomer);
   } else {
     res.status(400).send("Error Occured");
   }
@@ -130,18 +151,22 @@ const leaveQueue = asyncHandler(async (req, res) => {
 
 /* Profile controllers */
 
-const updateProfile = asyncHandler(async (req, res) => {
+const updateCustomer = asyncHandler(async (req, res) => {
   //get the data
-  const { name, email } = req.body;
+  const { name, email, address, phoneNumber } = req.body;
+
+  console.log(req.body);
 
   // update profile
 
-  const updatedProfile = await Customer.findByIdAndUpdate(
-    { _id: req.user.id },
+  const updatedProfile = await Customer.findOneAndUpdate(
+    { user: req.user.id },
     {
       $set: {
         email: email,
         name: name,
+        address: address,
+        phone: phoneNumber,
       },
     },
     {
@@ -194,7 +219,9 @@ const changePassword = asyncHandler(async (req, res) => {
 module.exports = {
   getCustomer,
   getCompanies,
+  getServces,
   joinQueue,
   leaveQueue,
+  updateCustomer,
   changePassword,
 };

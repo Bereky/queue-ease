@@ -109,8 +109,74 @@ const removeCompany = asyncHandler(async (req, res) => {
   }
 });
 
+/* Profile controllers */
+
+const updateAdmin = asyncHandler(async (req, res) => {
+  //get the data
+  const { email } = req.body;
+
+  console.log(req.body);
+
+  // update profile
+
+  const updatedProfile = await User.findOneAndUpdate(
+    { user: req.user.id },
+    {
+      $set: {
+        email: email,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  // send the updated data
+  if (updatedProfile) {
+    res.status(200).send(updatedProfile);
+  } else {
+    res.status(400).send("Unable to update profile");
+  }
+});
+
+/* Update current user account */
+const changePassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  const user = await User.findOne({ _id: req.user._id });
+
+  // if the user logged in with google
+  const comparePassword = await bcrypt.compare(oldPassword, user.password);
+
+  if (comparePassword) {
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    const updateAccount = await User.findByIdAndUpdate(
+      { _id: req.user._id },
+      {
+        $set: {
+          password: hashedPassword,
+        },
+      },
+      { new: true }
+    );
+
+    if (updateAccount) {
+      res.status(201).send("Password Changed Successfully");
+    } else {
+      res.status(400).send("Error occured");
+    }
+  } else {
+    res.status(400).send("Error occured");
+  }
+});
+
 module.exports = {
   getAdmin,
   removeCustomer,
   removeCompany,
+  updateAdmin,
+  changePassword,
 };

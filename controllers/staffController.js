@@ -71,9 +71,15 @@ const dequeueCustomer = asyncHandler(async (req, res) => {
   // update service
 
   if (staff) {
-    const updateService = await Service.findOneAndUpdate(staff._id, {
-      $pull: { queue: { queueId: queueId } },
-    });
+    const updateService = await Service.findOneAndUpdate(
+      staff._id,
+      {
+        $pull: { queue: { queueId: queueId } },
+      },
+      {
+        new: true,
+      }
+    );
 
     const updateCustomer = await Customer.findOneAndUpdate(
       {
@@ -95,8 +101,77 @@ const dequeueCustomer = asyncHandler(async (req, res) => {
   }
 });
 
+/* Profile controllers */
+
+const updateStaff = asyncHandler(async (req, res) => {
+  //get the data
+  const { name, email, address, phoneNumber } = req.body;
+
+  console.log(req.body);
+
+  // update profile
+
+  const updatedProfile = await Staff.findOneAndUpdate(
+    { user: req.user.id },
+    {
+      $set: {
+        email: email,
+        name: name,
+        address: address,
+        phone: phoneNumber,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  // send the updated data
+  if (updatedProfile) {
+    res.status(200).send(updatedProfile);
+  } else {
+    res.status(400).send("Unable to update customer profile");
+  }
+});
+
+/* Update current user account */
+const changePassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  const user = await User.findOne({ _id: req.user._id });
+
+  // if the user logged in with google
+  const comparePassword = await bcrypt.compare(oldPassword, user.password);
+
+  if (comparePassword) {
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    const updateAccount = await User.findByIdAndUpdate(
+      { _id: req.user._id },
+      {
+        $set: {
+          password: hashedPassword,
+        },
+      },
+      { new: true }
+    );
+
+    if (updateAccount) {
+      res.status(201).send("Password Changed Successfully");
+    } else {
+      res.status(400).send("Error occured");
+    }
+  } else {
+    res.status(400).send("Error occured");
+  }
+});
+
 module.exports = {
   getStaff,
   notifyCustomer,
   dequeueCustomer,
+  updateStaff,
+  changePassword,
 };
