@@ -12,6 +12,9 @@ const Company = require("../models/CompanyModel");
 const Customer = require("../models/CustomerModel");
 const Service = require("../models/ServiceModel");
 const Staff = require("../models/StaffModel");
+const {
+  CustomerProfilesChannelEndpointAssignmentContext,
+} = require("twilio/lib/rest/trusthub/v1/customerProfiles/customerProfilesChannelEndpointAssignment");
 
 const getStaff = asyncHandler(async (req, res) => {
   const staff = await Staff.findOne({ user: req.user.id });
@@ -55,49 +58,38 @@ const notifyCustomer = asyncHandler(async (req, res) => {
 });
 
 const dequeueCustomer = asyncHandler(async (req, res) => {
-  // desstructure the queue info
+  const { customerId, queueId, customer, service } = req.body.customer;
+  const { _id } = req.body.service;
 
-  const { customerId, queueId } = req.body;
+  const cust = await Customer.findById({ _id: customer._id });
+  const serv = await Service.findById({ _id: _id });
 
-  console.log(req.user, req.body);
-
-  //remove queue from customer
-  // company
-  // service
-  // return updated service
-
-  const staff = await Staff.findOne(req.user._id);
-
-  // update service
-
-  if (staff) {
-    const updateService = await Service.findOneAndUpdate(
-      staff._id,
-      {
-        $pull: { queue: { queueId: queueId } },
-      },
-      {
-        new: true,
-      }
-    );
-
-    const updateCustomer = await Customer.findOneAndUpdate(
-      {
-        customerId,
-      },
-      {
-        $pull: { queues: { queueId: queueId } },
-      },
-      {
-        new: true,
-      }
-    );
-
-    if (updateCustomer && updateService) {
-      res.status(200).send(updateService);
-    } else {
-      res.status(400).send("Queue Not Found");
+  //console.log(req.body.service);
+  const updateCustomer = await Customer.findByIdAndUpdate(
+    cust._id,
+    {
+      $pull: { queues: { serviceId: _id } },
+    },
+    {
+      new: true,
     }
+  );
+
+  console.log(serv);
+
+  const updateService = await Service.findByIdAndUpdate(
+    serv._id,
+    {
+      $pull: { queue: { queueId: queueId } },
+    },
+    { new: true }
+  );
+
+  if (updateCustomer && updateService) {
+    const upService = await Service.findById(_id);
+    res.status(200).send(upService);
+  } else {
+    res.status(400).send("Queue Not Found");
   }
 });
 

@@ -103,12 +103,13 @@ const joinQueue = asyncHandler(async (req, res) => {
   } else {
     res.status(400).send("Error Occured");
   }
-
-  // update in company
 });
 
 const leaveQueue = asyncHandler(async (req, res) => {
-  const { queueId, serviceId } = req.body;
+  const { queueId, serviceId } = req.body.queue;
+  const { _id } = req.body.service;
+
+  console.log(req.body.service);
 
   // update queue in customer
 
@@ -126,17 +127,19 @@ const leaveQueue = asyncHandler(async (req, res) => {
     }
   );
 
-  const updateService = await Service.findOneAndUpdate(
-    { serviceId },
+  const updateService = await Service.findByIdAndUpdate(
+    { _id: _id },
     {
       $pull: {
         queue: {
-          serviceId: serviceId,
+          serviceId: _id,
         },
       },
       $inc: { currPos: -1 },
     }
   );
+
+  console.log("service", updateService);
 
   const upCustomer = await Customer.findOne(req.user._id);
 
