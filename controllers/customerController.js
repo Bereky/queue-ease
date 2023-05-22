@@ -9,6 +9,10 @@ const Customer = require("../models/CustomerModel");
 const Staff = require("../models/StaffModel");
 const Service = require("../models/ServiceModel");
 
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = require("twilio")(accountSid, authToken);
+
 const getCustomer = asyncHandler(async (req, res) => {
   const customer = await Customer.findOne({ user: req.user.id });
 
@@ -93,6 +97,16 @@ const joinQueue = asyncHandler(async (req, res) => {
       new: true,
     }
   );
+
+  //send notification to customer
+  client.messages
+    .create({
+      body: `Hello, you have joined a queue for service ${updateService.name}. Your position is ${updateService.currPos}`,
+      from: "+12543823281",
+      to: updatedCustomer.phone,
+    })
+    .then((message) => console.log("message sent"))
+    .catch((err) => console.log(err));
 
   const upCustomer = await Customer.findOne(req.user._id);
 
