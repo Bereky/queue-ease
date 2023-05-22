@@ -14,7 +14,8 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = require("twilio")(accountSid, authToken);
 
 const getCustomer = asyncHandler(async (req, res) => {
-  const customer = await Customer.findOne({ user: req.user.id });
+  console.log(req.user);
+  const customer = await Customer.findOne({ user: req.user._id });
 
   if (customer) {
     res.status(200).send(customer);
@@ -176,6 +177,16 @@ const makeAppointment = asyncHandler(async (req, res) => {
 
     const upCustomer = await Customer.findOne(req.user._id);
 
+    //send notification to customer
+    client.messages
+      .create({
+        body: `Hello, you have joined a queue for service ${serviceData.name}. Your appointment time is ${data.time} on ${data.date}`,
+        from: "+12543823281",
+        to: upCustomer.phone,
+      })
+      .then((message) => console.log("message sent"))
+      .catch((err) => console.log(err));
+
     if (updateService && updatedCustomer && upCustomer) {
       //send customer and all companies
 
@@ -193,15 +204,12 @@ const leaveQueue = asyncHandler(async (req, res) => {
   const { _id } = req.body.service;
 
   const updateService = await Service.findByIdAndUpdate(
-    { _id: _id },
+    _id,
     {
-      $pull: {
-        queue: {
-          serviceId: _id,
-        },
-      },
+      $pull: { queue: { customerId: req.user._id } },
       $inc: { currPos: -1 },
-    }
+    },
+    { new: true }
   );
 
   // update queue in customer
