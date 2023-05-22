@@ -11,6 +11,7 @@ const {
   changePassword,
   updateCustomer,
   getServces,
+  makeAppointment,
 } = require("../controllers/customerController");
 
 /* Customer Routes */
@@ -19,6 +20,7 @@ router.get("/get-companies", authMiddleware, getCompanies);
 router.get("/get-services", authMiddleware, getServces);
 
 router.post("/join-queue", authMiddleware, joinQueue);
+router.post("/make-appointment", authMiddleware, makeAppointment);
 router.post("/leave-queue", authMiddleware, leaveQueue);
 router.post("/update-customer", authMiddleware, updateCustomer);
 router.post("/change-password", authMiddleware, changePassword);

@@ -154,8 +154,17 @@ const removeStaff = asyncHandler(async (req, res) => {
 });
 
 const addService = asyncHandler(async (req, res) => {
-  const { name, type, staff, waitTime, workTime, fee, limit, status } =
-    req.body;
+  const {
+    name,
+    type,
+    staff,
+    waitTime,
+    workTime,
+    fee,
+    limit,
+    status,
+    apptTime,
+  } = req.body;
 
   // addd service
   // update staff as assigned
@@ -169,6 +178,7 @@ const addService = asyncHandler(async (req, res) => {
       company: company._id,
       name,
       type,
+      apptTime,
       waitTime,
       limit,
       fee,
@@ -276,7 +286,7 @@ const removeService = asyncHandler(async (req, res) => {
 
   console.log(service);
 
-  if (service.queue.length > 0) {
+  if (service.queue && service.queue.length > 0) {
     res.status(400).send("Cant delete service there are customers in queue");
     return;
   }
@@ -294,7 +304,7 @@ const removeService = asyncHandler(async (req, res) => {
   const removedServiceFromCompany = await Company.findOneAndUpdate(
     company,
     {
-      $pull: { services: { serviceId: _id } },
+      $pull: { services: { serviceId: service._id } },
     },
     {
       new: true,

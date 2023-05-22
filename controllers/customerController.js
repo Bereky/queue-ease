@@ -103,16 +103,94 @@ const joinQueue = asyncHandler(async (req, res) => {
   } else {
     res.status(400).send("Error Occured");
   }
+
+  // update in company
+});
+
+const makeAppointment = asyncHandler(async (req, res) => {
+  const { service, data } = req.body;
+  const queueId = uniqId();
+
+  const serviceData = await Service.findOne({ _id: service._id });
+
+  console.log(serviceData);
+  // check if the que limit is reached and allow join
+
+  const customer = await Customer.findOne({ user: req.user._id });
+
+  if (serviceData && customer) {
+    const updateService = await Service.findByIdAndUpdate(
+      { _id: service._id },
+      {
+        $push: {
+          queue: {
+            appt: {
+              date: data.date,
+              time: data.time,
+            },
+            customer: customer,
+            queueId: queueId,
+            customerId: req.user._id,
+            pos: serviceData.currPos > 1 ? serviceData.currPos : 1,
+            joinTime: new Date(),
+          },
+        },
+        $inc: { currPos: 1 },
+      }
+    );
+
+    // update customer
+    const updatedCustomer = await Customer.findOneAndUpdate(
+      req.user._id,
+      {
+        $push: {
+          queues: {
+            service: updateService,
+            serviceId: service._id,
+            appt: {
+              date: data.date,
+              time: data.time,
+            },
+            pos: serviceData.currPos - 1,
+          },
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    const upCustomer = await Customer.findOne(req.user._id);
+
+    if (updateService && updatedCustomer && upCustomer) {
+      //send customer and all companies
+
+      res.status(201).send(upCustomer);
+    } else {
+      res.status(400).send("Error Occured");
+    }
+  } else {
+    res.status(400).send("Error Occured");
+  }
 });
 
 const leaveQueue = asyncHandler(async (req, res) => {
   const { queueId, serviceId } = req.body.queue;
   const { _id } = req.body.service;
 
-  console.log(req.body.service);
+  const updateService = await Service.findByIdAndUpdate(
+    { _id: _id },
+    {
+      $pull: {
+        queue: {
+          serviceId: _id,
+        },
+      },
+      $inc: { currPos: -1 },
+    }
+  );
 
   // update queue in customer
-
   const updatedCustomer = await Customer.findOneAndUpdate(
     req.user._id,
     {
@@ -124,18 +202,6 @@ const leaveQueue = asyncHandler(async (req, res) => {
     },
     {
       new: true,
-    }
-  );
-
-  const updateService = await Service.findByIdAndUpdate(
-    { _id: _id },
-    {
-      $pull: {
-        queue: {
-          serviceId: _id,
-        },
-      },
-      $inc: { currPos: -1 },
     }
   );
 
@@ -226,6 +292,7 @@ module.exports = {
   getCompanies,
   getServces,
   joinQueue,
+  makeAppointment,
   leaveQueue,
   updateCustomer,
   changePassword,

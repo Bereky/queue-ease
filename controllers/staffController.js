@@ -75,15 +75,17 @@ const dequeueCustomer = asyncHandler(async (req, res) => {
     }
   );
 
-  console.log(serv);
+  console.log(service, serv);
 
   const updateService = await Service.findByIdAndUpdate(
     serv._id,
     {
-      $pull: { queue: { queueId: queueId } },
+      $pull: { queue: { customerId: cust.user } },
     },
     { new: true }
   );
+
+  console.log(updateService);
 
   if (updateCustomer && updateService) {
     const upService = await Service.findById(_id);

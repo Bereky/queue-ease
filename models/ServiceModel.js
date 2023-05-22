@@ -20,6 +20,10 @@ const serviceSchema = new mongoose.Schema(
       type: String,
       allowNull: true,
     },
+    apptTime: {
+      type: Object,
+      allowNull: true,
+    },
     waitTime: {
       type: String,
       required: true,
