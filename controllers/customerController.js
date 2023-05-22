@@ -14,7 +14,6 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = require("twilio")(accountSid, authToken);
 
 const getCustomer = asyncHandler(async (req, res) => {
-  console.log(req.user);
   const customer = await Customer.findOne({ user: req.user._id });
 
   if (customer) {

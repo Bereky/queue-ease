@@ -39,22 +39,21 @@ const getStaff = asyncHandler(async (req, res) => {
 const notifyCustomer = asyncHandler(async (req, res) => {
   // desstructure the queue info
 
-  const { queue } = req.body;
+  const { queue, customer } = req.body;
 
   console.log(req.body);
 
-  // send sms to the customer
-
+  //send notification to customer
   client.messages
     .create({
-      body: `Hello There`,
+      body: `Hello customer, it is your turn! Please come to the office`,
       from: "+12543823281",
-      to: `+251926706255`,
+      to: customer.phone,
     })
     .then((message) => console.log("message sent"))
     .catch((err) => console.log(err));
 
-  res.status(200).send("Working");
+  res.status(200).send("message sent");
 });
 
 const dequeueCustomer = asyncHandler(async (req, res) => {
