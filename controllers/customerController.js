@@ -45,15 +45,22 @@ const getServces = asyncHandler(async (req, res) => {
 });
 
 const joinQueue = asyncHandler(async (req, res) => {
-  console.log(req.body);
-
   const queueId = uniqId();
+  const currentDate = new Date();
+  const date = currentDate.toLocaleDateString();
+  const time = currentDate.toLocaleTimeString();
 
-  const service = await Service.find({ _id: req.body._id });
+  const joinT = `${date}, ${time}`;
+
+  const service = await Service.findById(req.body._id);
 
   console.log(service);
-  // check if the que limit is reached and allow join
-  if (service && service[0].limit === service[0].queue.length + 1) {
+
+  if (service.queue.length > 1) {
+    console.log("ehehe");
+  }
+  if (service && service.limit === service.queue.length + 1) {
+    // check if the que limit is reached and allow join
     res.status.send("Queue is full");
     return;
   }
@@ -61,6 +68,8 @@ const joinQueue = asyncHandler(async (req, res) => {
   // update queues in service
 
   const customer = await Customer.findOne({ user: req.user._id });
+
+  //define the date as data and time
 
   const updateService = await Service.findByIdAndUpdate(
     { _id: req.body._id },
@@ -70,8 +79,8 @@ const joinQueue = asyncHandler(async (req, res) => {
           customer: customer,
           queueId: queueId,
           customerId: req.user._id,
-          pos: service[0].currPos,
-          joinTime: new Date(),
+          pos: service.queue.length > 1 ? service.currPos : 1,
+          joinTime: joinT,
         },
       },
       $inc: { currPos: 1 },
@@ -88,8 +97,8 @@ const joinQueue = asyncHandler(async (req, res) => {
           queueId: queueId,
           serviceId: req.body._id,
           service: updateService,
-          pos: service.currPos,
-          joinTime: new Date(),
+          pos: service.queue.length > 1 ? service.currPos : 1,
+          joinTime: joinT,
         },
       },
     },
@@ -123,12 +132,14 @@ const joinQueue = asyncHandler(async (req, res) => {
 
 const makeAppointment = asyncHandler(async (req, res) => {
   const { service, data } = req.body;
+
   const queueId = uniqId();
+  const currentDate = new Date();
+  const date = currentDate.toLocaleDateString();
+  const time = currentDate.toLocaleTimeString();
+  const joinT = `${date}, ${time}`;
 
   const serviceData = await Service.findOne({ _id: service._id });
-
-  console.log(serviceData);
-  // check if the que limit is reached and allow join
 
   const customer = await Customer.findOne({ user: req.user._id });
 
@@ -145,8 +156,9 @@ const makeAppointment = asyncHandler(async (req, res) => {
             customer: customer,
             queueId: queueId,
             customerId: req.user._id,
-            pos: serviceData.currPos > 1 ? serviceData.currPos : 1,
-            joinTime: new Date(),
+            pos: service.queue.length > 1 ? service.currPos : 1,
+
+            joinTime: joinT,
           },
         },
         $inc: { currPos: 1 },
@@ -213,7 +225,7 @@ const leaveQueue = asyncHandler(async (req, res) => {
 
   // update queue in customer
   const updatedCustomer = await Customer.findOneAndUpdate(
-    req.user._id,
+    { user: req.user._id },
     {
       $pull: {
         queues: {
@@ -225,8 +237,6 @@ const leaveQueue = asyncHandler(async (req, res) => {
       new: true,
     }
   );
-
-  console.log("service", updateService);
 
   const upCustomer = await Customer.findOne(req.user._id);
 
@@ -247,10 +257,7 @@ const updateCustomer = asyncHandler(async (req, res) => {
   //get the data
   const { name, email, address, phoneNumber } = req.body;
 
-  console.log(req.body);
-
   // update profile
-
   const updatedProfile = await Customer.findOneAndUpdate(
     { user: req.user.id },
     {

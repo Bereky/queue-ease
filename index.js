@@ -22,6 +22,8 @@ connectToDB();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "build")));
+
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 /* app.use((req, res, next) => {
@@ -60,4 +62,7 @@ app.use((error, req, res, next) => {
   res.status(status).json({ message: message, data: data });
 });
 
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "build", "index.html"));
+});
 app.listen(PORT, () => console.log("Server connected on PORT:", PORT));
